@@ -12,12 +12,13 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const IS_VERCEL = Boolean(process.env.VERCEL);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'loveconnect-secret-key-2026-xyz';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'SecurePass123';
 
-// Ensure database directory exists
-const dbPath = path.join(__dirname, 'database', 'locations.db');
+// On Vercel, use a writable temp folder instead of a local project folder.
+const dbPath = IS_VERCEL ? path.join('/tmp', 'locations.db') : path.join(__dirname, 'database', 'locations.db');
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
@@ -90,6 +91,8 @@ function ensureLocationColumns() {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('trust proxy', 1);
 
 // Express Session configuration
 app.use(session({
@@ -481,10 +484,14 @@ app.get('*', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`\n======================================================`);
-    console.log(`💖 LoveConnect Full-Stack Server Running Successfully!`);
-    console.log(`📍 Local URL: http://localhost:${PORT}`);
-    console.log(`🔒 Admin Area: http://localhost:${PORT}/admin`);
-    console.log(`======================================================\n`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log('======================================================');
+        console.log('💖 LoveConnect Full-Stack Server Running Successfully!');
+        console.log(`📍 Local URL: http://localhost:${PORT}`);
+        console.log(`🔒 Admin Area: http://localhost:${PORT}/admin`);
+        console.log('======================================================');
+    });
+}
+
+module.exports = app;
