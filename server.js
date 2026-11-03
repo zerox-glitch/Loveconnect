@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { Pool } = require('pg');
+const PgSession = require('connect-pg-simple')(session);
 
 // Load environment variables
 dotenv.config();
@@ -12,11 +14,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_VERCEL = Boolean(process.env.VERCEL);
+const DATABASE_URL = process.env.DATABASE_URL || '';
+const USE_NEON_DB = Boolean(DATABASE_URL);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'loveconnect-secret-key-2026-xyz';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'SecurePass123';
 
-// Vercel-safe JSON storage instead of native SQLite.
+const dbPool = USE_NEON_DB ? new Pool({
+    connectionString: DATABASE_URL,
+    ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+}) : null;
+
+// Local fallback storage used when no Neon database is configured.
 const dbPath = IS_VERCEL ? '/tmp/loveconnect-locations.json' : path.join(__dirname, 'database', 'locations.json');
 const sessionStorePath = IS_VERCEL ? '/tmp/loveconnect-sessions.json' : path.join(__dirname, 'database', 'sessions.json');
 const dbDir = path.dirname(dbPath);
@@ -54,28 +63,85 @@ function writeDatabaseRows(rows) {
 }
 
 function insertLocationRecord(record, callback) {
+    const normalizedRow = {
+        latitude: record.latitude ?? null,
+        longitude: record.longitude ?? null,
+        accuracy: record.accuracy ?? null,
+        ip_address: record.ip_address || 'Unknown',
+        user_agent: record.user_agent || 'Unknown',
+        status: record.status || 'Active',
+        is_gps: record.is_gps === 1 || record.is_gps === true ? 1 : 0,
+        city: record.city || 'Unknown',
+        country: record.country || 'Unknown',
+        notes: record.notes || '',
+        name: record.name || '',
+        email: record.email || '',
+        phone: record.phone || '',
+        photo: record.photo || null,
+        photo_mime: record.photo_mime || null
+    };
+
+    if (dbPool) {
+        const query = `
+            INSERT INTO location_records (
+                latitude, longitude, accuracy, ip_address, user_agent, status,
+                is_gps, city, country, notes, name, email, phone, photo, photo_mime
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING *;
+        `;
+
+        dbPool.query(query, [
+            normalizedRow.latitude,
+            normalizedRow.longitude,
+            normalizedRow.accuracy,
+            normalizedRow.ip_address,
+            normalizedRow.user_agent,
+            normalizedRow.status,
+            normalizedRow.is_gps,
+            normalizedRow.city,
+            normalizedRow.country,
+            normalizedRow.notes,
+            normalizedRow.name,
+            normalizedRow.email,
+            normalizedRow.phone,
+            normalizedRow.photo,
+            normalizedRow.photo_mime
+        ])
+            .then((result) => {
+                const created = result.rows[0];
+                console.log('[DATABASE] Stored location record in Neon DB:', created.id);
+                callback(null, created);
+            })
+            .catch((error) => {
+                console.error('[DATABASE ERROR] Insert failed:', error.message);
+                callback(error);
+            });
+        return;
+    }
+
     try {
         const rows = readDatabaseRows();
         const nextId = rows.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0) + 1;
         const createdAt = new Date().toISOString();
         const newRow = {
             id: nextId,
-            latitude: record.latitude ?? null,
-            longitude: record.longitude ?? null,
-            accuracy: record.accuracy ?? null,
+            latitude: normalizedRow.latitude,
+            longitude: normalizedRow.longitude,
+            accuracy: normalizedRow.accuracy,
             timestamp: createdAt,
-            ip_address: record.ip_address || 'Unknown',
-            user_agent: record.user_agent || 'Unknown',
-            status: record.status || 'Active',
-            is_gps: record.is_gps === 1 || record.is_gps === true ? 1 : 0,
-            city: record.city || 'Unknown',
-            country: record.country || 'Unknown',
-            notes: record.notes || '',
-            name: record.name || '',
-            email: record.email || '',
-            phone: record.phone || '',
-            photo: record.photo || null,
-            photo_mime: record.photo_mime || null
+            ip_address: normalizedRow.ip_address,
+            user_agent: normalizedRow.user_agent,
+            status: normalizedRow.status,
+            is_gps: normalizedRow.is_gps,
+            city: normalizedRow.city,
+            country: normalizedRow.country,
+            notes: normalizedRow.notes,
+            name: normalizedRow.name,
+            email: normalizedRow.email,
+            phone: normalizedRow.phone,
+            photo: normalizedRow.photo,
+            photo_mime: normalizedRow.photo_mime
         };
 
         rows.unshift(newRow);
@@ -89,6 +155,22 @@ function insertLocationRecord(record, callback) {
 }
 
 function updateLocationNotes(id, notes, callback) {
+    if (dbPool) {
+        dbPool.query('UPDATE location_records SET notes = $1 WHERE id = $2 RETURNING *;', [String(notes || '').trim(), id])
+            .then((result) => {
+                if (!result.rows[0]) {
+                    callback(new Error('Location record not found.'));
+                    return;
+                }
+                callback(null, result.rows[0]);
+            })
+            .catch((error) => {
+                console.error('[DATABASE ERROR] Notes update failed:', error.message);
+                callback(error);
+            });
+        return;
+    }
+
     try {
         const rows = readDatabaseRows();
         const targetIndex = rows.findIndex((row) => Number(row.id) === Number(id));
@@ -108,6 +190,16 @@ function updateLocationNotes(id, notes, callback) {
 }
 
 function clearLocationRows(callback) {
+    if (dbPool) {
+        dbPool.query('DELETE FROM location_records;')
+            .then(() => callback(null, true))
+            .catch((error) => {
+                console.error('[DATABASE ERROR] Clear failed:', error.message);
+                callback(error);
+            });
+        return;
+    }
+
     try {
         writeDatabaseRows([]);
         callback(null, true);
@@ -118,6 +210,16 @@ function clearLocationRows(callback) {
 }
 
 function getAllLocations(callback) {
+    if (dbPool) {
+        dbPool.query('SELECT * FROM location_records ORDER BY timestamp DESC;')
+            .then((result) => callback(null, result.rows))
+            .catch((error) => {
+                console.error('[DATABASE ERROR] Load failed:', error.message);
+                callback(error);
+            });
+        return;
+    }
+
     try {
         const rows = readDatabaseRows();
         callback(null, rows);
@@ -199,6 +301,49 @@ class JSONFileSessionStore extends session.Store {
 }
 
 const jsonSessionStore = new JSONFileSessionStore();
+const sessionStore = USE_NEON_DB ? new PgSession({
+    pool: dbPool,
+    tableName: 'user_sessions',
+    createTableIfMissing: true
+}) : jsonSessionStore;
+
+async function initializeDatabase() {
+    if (!dbPool) {
+        ensureDatabaseFile();
+        ensureJsonFile(sessionStorePath, {});
+        return;
+    }
+
+    await dbPool.query(`
+        CREATE TABLE IF NOT EXISTS location_records (
+            id SERIAL PRIMARY KEY,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            accuracy INTEGER,
+            timestamp TIMESTAMPTZ DEFAULT NOW(),
+            ip_address TEXT,
+            user_agent TEXT,
+            status TEXT DEFAULT 'Active',
+            is_gps INTEGER DEFAULT 0,
+            city TEXT,
+            country TEXT,
+            notes TEXT,
+            name TEXT,
+            email TEXT,
+            phone TEXT,
+            photo TEXT,
+            photo_mime TEXT
+        );
+    `);
+
+    await dbPool.query(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            sid VARCHAR(255) PRIMARY KEY,
+            sess JSON NOT NULL,
+            expire TIMESTAMPTZ NOT NULL
+        );
+    `);
+}
 
 ensureDatabaseFile();
 ensureJsonFile(sessionStorePath, {});
@@ -213,17 +358,21 @@ app.set('trust proxy', 1);
 // Express Session configuration
 app.use(session({
     secret: SESSION_SECRET,
-    store: jsonSessionStore,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     rolling: true,
     cookie: {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
+        sameSite: IS_VERCEL ? 'none' : 'lax',
+        secure: IS_VERCEL,
         maxAge: 7 * 24 * 60 * 60 * 1000
     }
 }));
+
+initializeDatabase().catch((err) => {
+    console.error('[DATABASE INIT ERROR] Failed to initialize data store:', err.message);
+});
 
 // Utility: Capture real client IP address (taking ngrok/proxies into account)
 function getClientIp(req) {

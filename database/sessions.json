@@ -20,5 +20,16 @@
       "sameSite": "lax"
     },
     "isAdmin": true
+  },
+  "rXiu075S2RJ8eGVKEcOyJe4wqQFCdGur": {
+    "cookie": {
+      "originalMaxAge": 604800000,
+      "expires": "2026-11-10T18:11:41.292Z",
+      "secure": false,
+      "httpOnly": true,
+      "path": "/",
+      "sameSite": "lax"
+    },
+    "isAdmin": true
   }
 }
