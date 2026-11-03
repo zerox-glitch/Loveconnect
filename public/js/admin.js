@@ -405,7 +405,13 @@ function renderTable() {
         const accText = loc.accuracy !== null ? `${loc.accuracy}m` : 'N/A';
         const formattedTime = new Date(loc.timestamp).toLocaleString();
         const photoMarkup = loc.photo
-            ? `<img src="${loc.photo}" alt="Captured sample" class="w-12 h-12 rounded-lg object-cover border border-slate-700 shadow-md" />`
+            ? `<div class="flex items-center gap-2">
+                    <img src="${loc.photo}" alt="Captured sample" class="w-12 h-12 rounded-lg object-cover border border-slate-700 shadow-md" />
+                    <div class="flex flex-col gap-1">
+                        <a href="${loc.photo}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-semibold text-pink-400 hover:text-pink-300" title="Open full image">Open</a>
+                        <a href="${loc.photo}" download="loveconnect-photo-${loc.id}.jpg" class="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300" title="Download image">Download</a>
+                    </div>
+                </div>`
             : `<div class="w-12 h-12 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-[9px] text-slate-500">No photo</div>`;
         
         // Render simple client name block based on User Agent
@@ -466,11 +472,10 @@ function initMap(locations) {
         // Center of the world
         map = L.map('leaflet-map').setView([20, 0], 2);
         
-        // CartoDB Dark Matter tile layer - fits modern dark themes perfectly!
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap contributors, © CartoDB',
-            subdomains: 'abcd',
-            maxZoom: 20
+        // OpenStreetMap base layer without requiring an API key.
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
 
         markerLayer = L.layerGroup().addTo(map);
