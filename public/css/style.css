@@ -1,0 +1,110 @@
+/* LoveConnect CSS Stylesheets */
+
+/* Custom Animations */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(12deg);
+    }
+    50% {
+        transform: translateY(-8px) rotate(10deg);
+    }
+}
+
+@keyframes float-slow {
+    0%, 100% {
+        transform: translateY(0px) rotate(-12deg);
+    }
+    50% {
+        transform: translateY(10px) rotate(-15deg);
+    }
+}
+
+@keyframes spin-slow {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes shine {
+    100% {
+        left: 125%;
+    }
+}
+
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float-slow 5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+    animation: spin-slow 15s linear infinite;
+}
+
+.animate-shine {
+    animation: shine 1.5s ease-in-out infinite;
+}
+
+/* CSS button glow animation */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.6), 0 0 25px rgba(236, 72, 153, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(236, 72, 153, 0.9), 0 0 50px rgba(236, 72, 153, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.4);
+        transform: scale(1.02);
+    }
+}
+
+.animate-glow {
+    animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Custom scrollbar for dark modern scroll design */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #020617; /* slate-950 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e293b; /* slate-800 */
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #334155; /* slate-700 */
+}
+
+/* Leaflet dark-theme customizations */
+.leaflet-container .leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+.leaflet-control-attribution {
+    background: rgba(15, 23, 42, 0.8) !important;
+    color: #475569 !important;
+}
+
+.leaflet-control-attribution a {
+    color: #db2777 !important;
+}
+
+/* Modal helper toggles */
+.modal-active {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.modal-scale-active {
+    transform: scale(1) !important;
+}

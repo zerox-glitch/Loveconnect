@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal Login | LoveConnect</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between overflow-x-hidden relative selection:bg-pink-500 selection:text-white">
+
+    <!-- Glowing Background blobs -->
+    <div class="absolute top-1/4 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/3 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <!-- Header Navbar (Back link) -->
+    <header class="relative z-10 w-full px-6 py-5 max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/" class="flex items-center space-x-2">
+            <span class="text-3xl text-pink-500"><i class="fa-solid fa-heart-pulse"></i></span>
+            <span class="text-2xl font-black bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 bg-clip-text text-transparent tracking-tight">LoveConnect</span>
+        </a>
+        <div>
+            <a href="/" class="px-4 py-2 text-xs md:text-sm font-semibold rounded-full border border-slate-700 hover:border-pink-500 hover:bg-pink-500/10 text-slate-300 hover:text-white transition-all duration-300">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Public Site
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center px-4 py-12 relative z-10 w-full">
+        <div class="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+            
+            <!-- Absolute Top Bar style -->
+            <div class="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600"></div>
+
+            <div class="text-center space-y-3 mb-8">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-xl mx-auto shadow-lg shadow-pink-500/15">
+                    <i class="fa-solid fa-lock text-white"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold tracking-tight">Admin Portal Access</h2>
+                <p class="text-slate-400 text-xs">Enter credentials to manage tracked locations and global maps.</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="error-banner" class="hidden bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl p-3 mb-6 flex items-start space-x-2.5">
+                <i class="fa-solid fa-circle-exclamation text-rose-500 mt-0.5"></i>
+                <span id="error-text">Invalid username or password</span>
+            </div>
+
+            <div class="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-200">
+                <div class="font-semibold uppercase tracking-wider text-[10px] text-emerald-300 mb-1">Default admin login</div>
+                <div><span class="text-slate-400">Username:</span> <span class="font-bold text-white">admin</span></div>
+                <div><span class="text-slate-400">Password:</span> <span class="font-bold text-white">SecurePass123</span></div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-5">
+                <div class="space-y-1.5">
+                    <label for="username" class="text-xs font-semibold text-slate-400 block">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-regular fa-user"></i></span>
+                        <input type="text" id="username" name="username" required placeholder="admin" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/10 transition duration-300">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="password" class="text-xs font-semibold text-slate-400 block">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-regular fa-eye-slash"></i></span>
+                        <input type="password" id="password" name="password" required placeholder="••••••••••••" class="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/10 transition duration-300">
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg shadow-pink-500/10 flex items-center justify-center space-x-2">
+                        <span id="btn-text">Authenticate Securely</span>
+                        <i id="btn-spinner" class="fa-solid fa-spinner animate-spin hidden"></i>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Quick Demo Credentials Box -->
+            <div class="mt-8 border-t border-slate-800/80 pt-5 text-center">
+                <div class="inline-block bg-slate-950/40 border border-slate-800/50 rounded-xl p-3 text-left">
+                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1"><i class="fa-solid fa-flask mr-1"></i> Demo Credentials</div>
+                    <div class="text-xs text-slate-400 font-mono space-y-0.5">
+                        <div>User: <span class="text-pink-400">admin</span></div>
+                        <div>Pass: <span class="text-purple-400">SecurePass123</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950/40 py-6 px-4 text-center">
+        <p class="text-xs text-slate-600">&copy; 2026 LoveConnect Security Demonstration Panel. All rights reserved.</p>
+    </footer>
+
+    <!-- Form Script -->
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const errorBanner = document.getElementById('error-banner');
+            const errorText = document.getElementById('error-text');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+
+            // Reset UI
+            errorBanner.classList.add('hidden');
+            submitBtn.disabled = true;
+            btnText.innerText = 'Authenticating...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: usernameInput.value,
+                        password: passwordInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Success redirection
+                    window.location.href = '/admin';
+                } else {
+                    // Error response
+                    errorText.innerText = data.message || 'Invalid username or password.';
+                    errorBanner.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    btnText.innerText = 'Authenticate Securely';
+                    btnSpinner.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                errorText.innerText = 'Unable to connect to authentication server. Please try again later.';
+                errorBanner.classList.remove('hidden');
+                submitBtn.disabled = false;
+                btnText.innerText = 'Authenticate Securely';
+                btnSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

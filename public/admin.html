@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Center | LoveConnect Admin Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js CSS and JS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Chart.js for stats charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Leaflet style overrides for dark theme dashboard */
+        .leaflet-container {
+            background-color: #020617 !important;
+        }
+        .leaflet-bar a {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }
+        .leaflet-bar a:hover {
+            background-color: #1e293b !important;
+            color: #ec4899 !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border: 1px solid #1e293b !important;
+            border-radius: 12px !important;
+            padding: 4px !important;
+        }
+        .leaflet-popup-tip {
+            background-color: #0f172a !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col selection:bg-pink-500 selection:text-white">
+
+    <!-- Top Status / Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl text-pink-500 animate-pulse"><i class="fa-solid fa-house-laptop"></i></span>
+                <div>
+                    <h1 class="text-xl font-black bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 bg-clip-text text-transparent tracking-tight">LoveConnect Admin</h1>
+                    <p class="text-[10px] text-slate-400 code-font uppercase tracking-widest flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span> Live Security Console
+                    </p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-[10px] text-emerald-200 hidden sm:block">
+                <span class="font-bold">Admin:</span> admin / SecurePass123
+            </div>
+            
+            <!-- Global Actions and Controls -->
+            <div class="flex flex-wrap items-center gap-3">
+                <button id="refresh-btn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold py-2 px-4 rounded-xl text-xs transition duration-300 flex items-center space-x-2">
+                    <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+                    <span>Refresh Logs</span>
+                </button>
+                <a href="/api/locations/export" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-xl text-xs transition duration-300 flex items-center space-x-2 shadow-lg shadow-emerald-500/10">
+                    <i class="fa-solid fa-file-csv"></i>
+                    <span>Export CSV</span>
+                </a>
+                <button id="clear-db-btn" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-400 font-semibold py-2 px-4 rounded-xl text-xs transition duration-300 flex items-center space-x-2">
+                    <i class="fa-regular fa-trash-can"></i>
+                    <span>Clear DB</span>
+                </button>
+                <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+                <a href="/admin/logout" class="bg-slate-850 hover:bg-pink-950/20 border border-slate-850 hover:border-pink-500/30 text-slate-400 hover:text-pink-500 py-2 px-4 rounded-xl text-xs font-semibold transition duration-300 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-8">
+        
+        <!-- Live Polling Alert / Mode indicator -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3 text-left">
+                <div class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-lg border border-pink-500/20">
+                    <i class="fa-solid fa-tower-broadcast animate-pulse"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">Real-time Location Polling</h3>
+                    <p class="text-xs text-slate-400">The admin terminal automatically monitors incoming location logs in near real-time.</p>
+                </div>
+            </div>
+            <!-- Auto-refresh interval toggle -->
+            <div class="flex items-center space-x-3 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-xs">
+                <label for="live-toggle" class="font-semibold text-slate-400 cursor-pointer select-none">Live Updates (5s)</label>
+                <input id="live-toggle" type="checkbox" checked class="h-4 w-4 rounded border-slate-700 bg-slate-800 text-pink-500 focus:ring-pink-500/50 cursor-pointer">
+            </div>
+        </div>
+
+        <!-- STATISTICS CARDS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Stat 1: Total Captured -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between shadow-lg">
+                <div class="space-y-1.5 text-left">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Captured</span>
+                    <h3 id="stat-total" class="text-3xl font-black text-white code-font">--</h3>
+                    <p class="text-[10px] text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i> Global scans</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-500 border border-pink-500/20 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-compass"></i>
+                </div>
+            </div>
+
+            <!-- Stat 2: Unique IPs -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between shadow-lg">
+                <div class="space-y-1.5 text-left">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Unique IPs</span>
+                    <h3 id="stat-ips" class="text-3xl font-black text-white code-font">--</h3>
+                    <p class="text-[10px] text-purple-400"><i class="fa-solid fa-network-wired"></i> Unique networks</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 border border-purple-500/20 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-globe"></i>
+                </div>
+            </div>
+
+            <!-- Stat 3: Today's Captures -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between shadow-lg">
+                <div class="space-y-1.5 text-left">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Today's Captures</span>
+                    <h3 id="stat-today" class="text-3xl font-black text-white code-font">--</h3>
+                    <p class="text-[10px] text-pink-400" id="stat-today-sub">Past 24 hours</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-500 border border-pink-500/20 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </div>
+            </div>
+
+            <!-- Stat 4: Last Capture Time -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center justify-between shadow-lg">
+                <div class="space-y-1.5 text-left w-[70%]">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Last Capture</span>
+                    <h3 id="stat-last-time" class="text-sm font-bold text-white code-font truncate">--</h3>
+                    <p class="text-[10px] text-slate-400 truncate" id="stat-last-sub">No records yet</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-xl">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CHARTS & VISUALIZATION ROW -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left: Live Geolocation Map (Leaflet.js) -->
+            <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between space-y-4">
+                <div class="flex justify-between items-center">
+                    <div class="text-left">
+                        <h3 class="font-extrabold text-base">📍 Live Global Tracking Map</h3>
+                        <p class="text-xs text-slate-400">Pins illustrate captured locations (Real GPS and IP Geolocation fallbacks).</p>
+                    </div>
+                    <div class="flex items-center space-x-4 text-xs font-semibold">
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-pink-500 mr-1.5"></span> GPS Target</span>
+                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> IP Fallback</span>
+                    </div>
+                </div>
+
+                <!-- Leaflet container -->
+                <div id="leaflet-map" class="h-96 w-full rounded-2xl border border-slate-800 shadow-inner overflow-hidden relative">
+                    <!-- Map spinner -->
+                    <div id="map-spinner" class="absolute inset-0 bg-slate-950/70 z-20 flex items-center justify-center flex-col space-y-3">
+                        <i class="fa-solid fa-spinner animate-spin text-3xl text-pink-500"></i>
+                        <span class="text-xs text-slate-400 font-medium">Loading coordinates...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Captures Statistics Charts (Chart.js) -->
+            <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                <div class="text-left mb-4">
+                    <h3 class="font-extrabold text-base">📊 Capture Analytics</h3>
+                    <p class="text-xs text-slate-400">Proportions of Tracking Types & Status ratios.</p>
+                </div>
+
+                <!-- Canvas for Chart.js -->
+                <div class="flex-grow flex items-center justify-center h-56 relative">
+                    <canvas id="type-chart"></canvas>
+                    <div id="chart-no-data" class="hidden absolute inset-0 bg-slate-900 flex items-center justify-center text-xs text-slate-500">
+                        No sufficient data for charting.
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-800 mt-4 pt-4 text-xs text-slate-400 text-left space-y-1">
+                    <div class="flex justify-between">
+                        <span>Total Real GPS captures:</span>
+                        <span id="chart-count-gps" class="font-bold text-pink-400 code-font">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Total IP Geolocation fallbacks:</span>
+                        <span id="chart-count-ip" class="font-bold text-purple-400 code-font">--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MAIN DATA LOGS TABLE CARD -->
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+            
+            <!-- Table Action Header -->
+            <div class="p-6 border-b border-slate-800/80 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-left">
+                    <h3 class="font-extrabold text-base">📋 Geolocation Tracking Logs</h3>
+                    <p class="text-xs text-slate-400">Verify client details, GPS accuracy, and insert localized notes.</p>
+                </div>
+                
+                <!-- Table Search & Filters -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-grow sm:flex-grow-0">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                        <input id="search-input" type="text" placeholder="Search IP, City, Country, Notes..." class="bg-slate-950/60 border border-slate-800 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 transition duration-300 w-full sm:w-60">
+                    </div>
+                    
+                    <select id="filter-gps" class="bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-300 focus:outline-none focus:border-pink-500 cursor-pointer">
+                        <option value="all">All Tracking Types</option>
+                        <option value="gps">GPS Locations</option>
+                        <option value="ip">IP Fallbacks</option>
+                    </select>
+
+                    <select id="limit-select" class="bg-slate-950/60 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-300 focus:outline-none focus:border-pink-500 cursor-pointer">
+                        <option value="10">10 Rows</option>
+                        <option value="25" selected>25 Rows</option>
+                        <option value="50">50 Rows</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Responsive Table Wrapper -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-950/40 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800/60 select-none">
+                            <th class="py-4 px-6 text-center cursor-pointer hover:text-white transition duration-200" onclick="sortTable(0)">ID <span class="code-font text-[9px]" id="sort-icon-0">▼</span></th>
+                            <th class="py-4 px-4">Captured Profile</th>
+                            <th class="py-4 px-4 cursor-pointer hover:text-white transition duration-200" onclick="sortTable(1)">Coordinates <span class="code-font text-[9px]" id="sort-icon-1"></span></th>
+                            <th class="py-4 px-4 text-center cursor-pointer hover:text-white transition duration-200" onclick="sortTable(2)">Accuracy <span class="code-font text-[9px]" id="sort-icon-2"></span></th>
+                            <th class="py-4 px-4 cursor-pointer hover:text-white transition duration-200" onclick="sortTable(3)">Timestamp <span class="code-font text-[9px]" id="sort-icon-3"></span></th>
+                            <th class="py-4 px-4 cursor-pointer hover:text-white transition duration-200" onclick="sortTable(4)">IP Address <span class="code-font text-[9px]" id="sort-icon-4"></span></th>
+                            <th class="py-4 px-4 cursor-pointer hover:text-white transition duration-200" onclick="sortTable(5)">Location (City/Country) <span class="code-font text-[9px]" id="sort-icon-5"></span></th>
+                            <th class="py-4 px-4">User Agent</th>
+                            <th class="py-4 px-6">Notes <span class="text-pink-500 font-bold">*</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-800/40">
+                        <!-- Filled by JS -->
+                        <tr>
+                            <td colspan="8" class="text-center py-8 text-slate-500">
+                                <i class="fa-solid fa-spinner animate-spin text-xl text-pink-500 mr-2"></i> Fetching records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="p-6 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
+                <span id="pagination-info">Showing 0 to 0 of 0 logs</span>
+                <div class="flex items-center space-x-2">
+                    <button id="prev-btn" disabled class="bg-slate-800 disabled:opacity-40 hover:bg-slate-700 disabled:hover:bg-slate-800 text-slate-300 font-semibold py-2 px-4 rounded-xl transition duration-300">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+                    </button>
+                    <button id="next-btn" disabled class="bg-slate-800 disabled:opacity-40 hover:bg-slate-700 disabled:hover:bg-slate-800 text-slate-300 font-semibold py-2 px-4 rounded-xl transition duration-300">
+                        Next <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-8 px-6 text-center">
+        <p class="text-xs text-slate-600">&copy; 2026 LoveConnect Security Demonstration Panel. All rights reserved.</p>
+    </footer>
+
+    <!-- Notes Modal Editor -->
+    <div id="notes-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-[2rem] max-w-sm w-full space-y-4 shadow-2xl text-left">
+            <h3 class="text-lg font-bold flex items-center space-x-2">
+                <i class="fa-regular fa-comment-dots text-pink-500"></i>
+                <span>Edit Target Notes</span>
+            </h3>
+            <div class="space-y-1">
+                <label for="notes-input" class="text-[10px] uppercase font-bold text-slate-500">Annotation Details</label>
+                <textarea id="notes-input" rows="4" placeholder="Enter target description, connection status, follow-up flags..." class="w-full bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-pink-500 transition duration-300"></textarea>
+            </div>
+            <div class="flex items-center space-x-3 pt-2">
+                <button onclick="closeNotesModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-300 text-slate-300 border border-slate-700">
+                    Cancel
+                </button>
+                <button id="save-notes-btn" class="w-1/2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 font-bold py-2.5 px-4 rounded-xl text-xs transition-all text-white shadow-lg shadow-pink-500/10 flex items-center justify-center space-x-1.5">
+                    <span>Save Note</span>
+                    <i id="notes-spinner" class="fa-solid fa-spinner animate-spin hidden"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin JS code -->
+    <script src="/js/admin.js"></script>
+</body>
+</html>

