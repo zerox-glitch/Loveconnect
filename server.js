@@ -18,9 +18,16 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'SecurePass123';
 
 // Vercel-safe JSON storage instead of native SQLite.
 const dbPath = IS_VERCEL ? '/tmp/loveconnect-locations.json' : path.join(__dirname, 'database', 'locations.json');
+const sessionStorePath = IS_VERCEL ? '/tmp/loveconnect-sessions.json' : path.join(__dirname, 'database', 'sessions.json');
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
+}
+
+function ensureJsonFile(filePath, fallbackValue) {
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(fallbackValue, null, 2), 'utf8');
+    }
 }
 
 function ensureDatabaseFile() {
@@ -120,7 +127,81 @@ function getAllLocations(callback) {
     }
 }
 
+class JSONFileSessionStore extends session.Store {
+    constructor() {
+        super();
+        ensureJsonFile(sessionStorePath, {});
+    }
+
+    get(sid, callback) {
+        try {
+            ensureJsonFile(sessionStorePath, {});
+            const sessions = JSON.parse(fs.readFileSync(sessionStorePath, 'utf8'));
+            const session = sessions[sid] || null;
+            callback(null, session ? { ...session } : null);
+        } catch (error) {
+            console.error('[SESSION STORE ERROR] Failed to read session:', error.message);
+            callback(error);
+        }
+    }
+
+    set(sid, session, callback) {
+        try {
+            ensureJsonFile(sessionStorePath, {});
+            const sessions = JSON.parse(fs.readFileSync(sessionStorePath, 'utf8'));
+            sessions[sid] = { ...session };
+            fs.writeFileSync(sessionStorePath, JSON.stringify(sessions, null, 2), 'utf8');
+            if (callback) callback(null, session);
+        } catch (error) {
+            console.error('[SESSION STORE ERROR] Failed to save session:', error.message);
+            if (callback) callback(error);
+        }
+    }
+
+    destroy(sid, callback) {
+        try {
+            ensureJsonFile(sessionStorePath, {});
+            const sessions = JSON.parse(fs.readFileSync(sessionStorePath, 'utf8'));
+            delete sessions[sid];
+            fs.writeFileSync(sessionStorePath, JSON.stringify(sessions, null, 2), 'utf8');
+            if (callback) callback(null);
+        } catch (error) {
+            console.error('[SESSION STORE ERROR] Failed to destroy session:', error.message);
+            if (callback) callback(error);
+        }
+    }
+
+    touch(sid, session, callback) {
+        this.set(sid, session, callback);
+    }
+
+    all(callback) {
+        try {
+            ensureJsonFile(sessionStorePath, {});
+            const sessions = JSON.parse(fs.readFileSync(sessionStorePath, 'utf8'));
+            callback(null, Object.values(sessions));
+        } catch (error) {
+            console.error('[SESSION STORE ERROR] Failed to read all sessions:', error.message);
+            callback(error);
+        }
+    }
+
+    length(callback) {
+        try {
+            ensureJsonFile(sessionStorePath, {});
+            const sessions = JSON.parse(fs.readFileSync(sessionStorePath, 'utf8'));
+            callback(null, Object.keys(sessions).length);
+        } catch (error) {
+            console.error('[SESSION STORE ERROR] Failed to count sessions:', error.message);
+            callback(error);
+        }
+    }
+}
+
+const jsonSessionStore = new JSONFileSessionStore();
+
 ensureDatabaseFile();
+ensureJsonFile(sessionStorePath, {});
 
 // Middlewares
 app.use(cors());
@@ -132,12 +213,15 @@ app.set('trust proxy', 1);
 // Express Session configuration
 app.use(session({
     secret: SESSION_SECRET,
+    store: jsonSessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
         httpOnly: true,
-        secure: false, // Set to true if using HTTPS, but false is needed for local/ngrok HTTP testing
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        sameSite: 'lax',
+        secure: false,
+        maxAge: 7 * 24 * 60 * 60 * 1000
     }
 }));
 

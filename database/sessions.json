@@ -1,0 +1,24 @@
+{
+  "V1TJxD3IqOzJPQpwiiwYlcjARq7mRzEQ": {
+    "cookie": {
+      "originalMaxAge": 604800000,
+      "expires": "2026-11-10T17:40:11.793Z",
+      "secure": false,
+      "httpOnly": true,
+      "path": "/",
+      "sameSite": "lax"
+    },
+    "isAdmin": true
+  },
+  "jFZ_jVkKelU3gKkh4Je8m_zDJYKj4Rb5": {
+    "cookie": {
+      "originalMaxAge": 604799999,
+      "expires": "2026-11-10T17:40:22.732Z",
+      "secure": false,
+      "httpOnly": true,
+      "path": "/",
+      "sameSite": "lax"
+    },
+    "isAdmin": true
+  }
+}
